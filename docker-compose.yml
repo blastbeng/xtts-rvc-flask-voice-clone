@@ -1,0 +1,56 @@
+name: bark-flask-voice-clone
+services:
+  redis:
+    image: redis
+    container_name: bark-flask-voice-clone-redis
+    networks:
+      - xtts-rvc-flask-voice-clone-network
+    restart: "always"
+  xtts-rvc-flask-voice-clone-api:
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+      shm_size: "16gb"
+    container_name: xtts-rvc-flask-voice-clone-api
+    networks:
+      - xtts-rvc-flask-voice-clone-network
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Rome
+    image: "blastbeng/xtts-rvc-flask-voice-clone-api:1.0.0"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu
+    restart: always
+    shm_size: "16gb"
+    volumes:
+      - ".env:/home/user/xtts-rvc-flask-voice-clone/.env"
+      - "cache:/home/user/.cache"
+      - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/data:/home/user/xtts-rvc-flask-voice-clone/data"
+      #- "/tmp/xtts-rvc-flask-voice-clone:/tmp/xtts-rvc-flask-voice-clone"
+      - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/tmp:/tmp/xtts-rvc-flask-voice-clone"
+      - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/RVC_weights:/home/user/xtts-rvc-flask-voice-clone/RVC/weights"
+      - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/RVC_logs:/home/user/xtts-rvc-flask-voice-clone/RVC/logs"
+      - "./RVC/logs/mute:/home/user/xtts-rvc-flask-voice-clone/RVC/logs/mute"
+      - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/datasets:/home/user/xtts-rvc-flask-voice-clone/datasets"
+    entrypoint: ./entrypoint.sh
+    ports:
+      - 50811:50811
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:50811/utils/healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+volumes:
+  cache:
+networks:
+  xtts-rvc-flask-voice-clone-network:
+    driver: bridge

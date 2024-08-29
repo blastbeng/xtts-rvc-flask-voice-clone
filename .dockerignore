@@ -1,0 +1,7 @@
+**/.venv
+**/.vscode
+**/data
+**/__pycache__
+**/RVC/__pycache__
+**/RVC/oneclickprocess.pyi
+**/nuwave2/__pycache__

@@ -81,10 +81,9 @@ nsvoice = api.namespace('voice', 'Voice APIs')
 
 @nsvoice.route('/clone/<string:voice_name>/')
 @nsvoice.route('/clone/<string:voice_name>/<int:epochs>/')
-@nsvoice.route('/clone/<string:voice_name>/<int:epochs>/<int:cleanup>/')
-@nsvoice.route('/clone/<string:voice_name>/<int:epochs>/<int:cleanup>/<int:from_scratch>/')
+@nsvoice.route('/clone/<string:voice_name>/<int:epochs>/<int:from_scratch>/')
 class CloneClass(Resource):
-  def post (self, voice_name: str, epochs = 100, cleanup = 0, from_scratch = 0):
+  def post (self, voice_name: str, epochs = 100, from_scratch = 0):
     try:      
       found = False
       for thread in threading.enumerate(): 
@@ -98,36 +97,40 @@ class CloneClass(Resource):
       else:
         i = 1
         datasets = []
+        traindir_path =  os.path.dirname(os.path.abspath(__file__)) + "/datasets/" + voice_name
         while request.files.get('dataset_' + str(i), None) is not None:
           datasets.append(request.files.get('dataset_'+ str(i), None))
           i = i + 1
-        for dataset in datasets:
-          if not dataset.filename.endswith(".wav"):
-            return make_response('Every "dataset_x" param extension must be .wav or .mp3!', 400)
+        if len(datasets) == 0 and (not os.path.isdir(traindir_path) or len(os.listdir(traindir_path)) == 0):
+              return make_response('Dataset folder is empty and no dataset provided! You need to provide at least one dataset_x in wav format, starting from 1 (es. dataset_1, dataset_2, etc...)', 400)
+        else:
+          for dataset in datasets:
+            if not dataset.filename.endswith(".wav"):
+              return make_response('Every "dataset_x" param extension must be .wav or .mp3!', 400)
 
-        traindir_path =  os.path.dirname(os.path.abspath(__file__)) + "/datasets/" + voice_name
-        if cleanup == 1 and os.path.exists(traindir_path): 
-          shutil.rmtree(traindir_path)
-        if not os.path.exists(traindir_path): 
-          os.makedirs(traindir_path)
+          if from_scratch == 1 and os.path.exists(traindir_path): 
+            shutil.rmtree(traindir_path)
+          if not os.path.exists(traindir_path): 
+            os.makedirs(traindir_path)
 
-        dataset_path = None
-        for dataset in datasets:
-          dataset_path = traindir_path + "/" + voice_name + "_" + hashlib.md5((dataset.filename).encode('utf-8')).hexdigest() + "_" + uuid.uuid4().hex + "." + dataset.filename.split(".")[1]
-          dataset.save(dataset_path)
+          dataset_path = None
+          dataset_paths = []
+          for dataset in datasets:
+            dataset_path = traindir_path + "/" + dataset.filename
+            dataset.save(dataset_path)
+            dataset_paths.append(dataset_path)
 
-        voice_clone_thread = "voice_clone_" + voice_name
-        threading.Thread(target=lambda: voice.voice_clone(voice_name, epochs, cleanup==1, from_scratch==1), name=voice_clone_thread).start()
-        data = {
-          "message": "Starting voice cloning process",
-          "dataset_path": "" if dataset_path is None else dataset_path,
-          "epochs": str(epochs),
-          "cleanup": str(cleanup==1),
-          "from_scratch": str(from_scratch==1),
-          "voice_name": voice_name,
-          "status_url": request.root_url + "voice/clone_status/" + voice_name
-        }
-        return get_response_json(json.dumps(data), 200)  
+          voice_clone_thread = "voice_clone_" + voice_name
+          threading.Thread(target=lambda: voice.voice_clone(voice_name, epochs, dataset_paths, from_scratch==1), name=voice_clone_thread).start()
+          data = {
+            "message": "Starting voice cloning process",
+            "dataset_path": "" if dataset_path is None else dataset_path,
+            "epochs": str(epochs),
+            "from_scratch": str(from_scratch==1),
+            "voice_name": voice_name,
+            "status_url": request.root_url + "voice/clone_status/" + voice_name
+          }
+          return get_response_json(json.dumps(data), 200)  
     except Exception as e:
       exc_type, exc_obj, exc_tb = sys.exc_info()
       fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -187,7 +190,7 @@ class TalkClass(Resource):
         } 
         return get_response_json(json.dumps(data), 206)
       else:
-        if os.path.isdir(os.path.dirname(os.path.abspath(__file__)) + "/datasets/"+voice_name) and os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/weights/"+voice_name+".pth"):
+        if os.path.isdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/"+voice_name) and os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/weights/"+voice_name+".pth"):
           job_id = voice_name + "_" + uuid.uuid4().hex
           voice_talk_thread = "voice_talk_" + job_id
           threading.Thread(target=lambda: voice.talk(voice_name, text, job_id), name=voice_talk_thread).start()

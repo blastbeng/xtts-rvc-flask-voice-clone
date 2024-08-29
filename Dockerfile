@@ -41,22 +41,21 @@ RUN pip3 install -r requirements.txt
 
 USER root
 ENV HOME=/home/user
-ADD --chown=user:user hubert $HOME/xtts-rvc-flask-voice-clone/hubert
-ADD --chown=user:user RVC $HOME/xtts-rvc-flask-voice-clone/RVC
-ADD --chown=user:user nuwave2 $HOME/xtts-rvc-flask-voice-clone/nuwave2
-ADD --chown=user:user utils $HOME/xtts-rvc-flask-voice-clone/utils
-ADD --chown=user:user config.py $HOME/xtts-rvc-flask-voice-clone/config.py
-ADD --chown=user:user main.py $HOME/xtts-rvc-flask-voice-clone/main.py
-ADD --chown=user:user voice.py $HOME/xtts-rvc-flask-voice-clone/voice.py
-ADD --chown=user:user silenceremove.py $HOME/xtts-rvc-flask-voice-clone/silenceremove.py
-ADD --chown=user:user get_model.py $HOME/xtts-rvc-flask-voice-clone/get_model.py
-ADD --chown=user:user init.py $HOME/xtts-rvc-flask-voice-clone/init.py
-ADD --chown=user:user entrypoint.sh $HOME/xtts-rvc-flask-voice-clone/entrypoint.sh
-ADD --chown=user:user uwsgi.ini $HOME/xtts-rvc-flask-voice-clone/uwsgi.ini
-RUN chmod +x $HOME/xtts-rvc-flask-voice-clone/entrypoint.sh
+COPY hubert hubert
+COPY RVC RVC
+COPY nuwave2 nuwave2
+COPY utils utils
+COPY config.py .
+COPY main.py .
+COPY voice.py .
+COPY get_model.py .
+COPY init.py .
+COPY entrypoint.sh .
+COPY uwsgi.ini .
+RUN chmod +x entrypoint.sh
 
-RUN chown -R user:user $HOME/xtts-rvc-flask-voice-clone
-RUN chmod 777 -R $HOME/xtts-rvc-flask-voice-clone
+RUN chown -R user:user .
+RUN chmod 777 -R .
 
 
 USER user

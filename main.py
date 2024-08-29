@@ -101,8 +101,10 @@ class CloneClass(Resource):
         while request.files.get('dataset_' + str(i), None) is not None:
           datasets.append(request.files.get('dataset_'+ str(i), None))
           i = i + 1
-        if len(datasets) == 0 and (not os.path.isdir(traindir_path) or len(os.listdir(traindir_path)) == 0):
+        if len(datasets) == 0 and (not os.path.isdir(traindir_path) or (os.path.isdir(traindir_path) and len(os.listdir(traindir_path)) == 0)):
               return make_response('Dataset folder is empty and no dataset provided! You need to provide at least one dataset_x in wav format, starting from 1 (es. dataset_1, dataset_2, etc...)', 400)
+        elif len(datasets) == 0 and from_scratch == 1:
+              return make_response('You asked to start from scratch but no dataset were provided! You need to provide at least one dataset_x in wav format, starting from 1 (es. dataset_1, dataset_2, etc...)', 400)
         else:
           for dataset in datasets:
             if not dataset.filename.endswith(".wav"):

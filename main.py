@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 from time import strftime
 from pathlib import Path
 
+
 import torch.multiprocessing as mp
 
 dotenv_path = join(dirname(__file__), '.env')
@@ -184,11 +185,9 @@ class CloneStatusClass(Resource):
       g.request_error = str(e)
 
 @nsvoice.route('/talk/<string:voice_name>/<string:text>/')
-@nsvoice.route('/talk/<string:voice_name>/<string:text>/<string:barkvoice>/')
-@nsvoice.route('/talk/<string:voice_name>/<string:text>/<string:barkvoice>/<float:text_temp>/')
-@nsvoice.route('/talk/<string:voice_name>/<string:text>/<string:barkvoice>/<float:text_temp>/<float:waveform_temp>/')
+@nsvoice.route('/talk/<string:voice_name>/<string:text>/<string:language>/')
 class TalkClass(Resource):
-  def get (self, voice_name: str, text: str, barkvoice = None, text_temp = 0.7, waveform_temp = 0.7):
+  def get (self, voice_name: str, text: str, language = "it"):
     try:
       found = False
       for thread in threading.enumerate(): 
@@ -203,13 +202,11 @@ class TalkClass(Resource):
         if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/voices/"+voice_name+".wav"):
           job_id = voice_name + "_" + uuid.uuid4().hex
           voice_talk_thread = "voice_talk_" + job_id
-          threading.Thread(target=lambda: voice.talk(voice_name, text, barkvoice, text_temp, waveform_temp, job_id), name=voice_talk_thread).start()
+          threading.Thread(target=lambda: voice.talk(voice_name, text, job_id), name=voice_talk_thread).start()
           data = {
             "message": "Starting audio generation process. " + ("Weight file found, using RVC." if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/weights/"+voice_name+".pth") else "Weight file not found, not using RVC."),
             "voice_name": voice_name,
             "text": text,
-            "text_temp": str(text_temp),
-            "waveform_temp": str(waveform_temp),
             "job_id": job_id,
             "poll_url": request.root_url + "voice/poll/" + job_id
           }
@@ -260,7 +257,7 @@ class PollClass(Resource):
 
 @nsvoice.route('/request_audio/<string:job_id>')
 class RequestFileClass(Resource):
-  @cache.cached(timeout=300, query_string=True)
+  #@cache.cached(timeout=300, query_string=True)
   def get (self, job_id: str):
     try:
       filename =  job_id + ".wav"
@@ -285,7 +282,7 @@ class RequestFileClass(Resource):
 
 @nsvoice.route('/listvoices')
 class ListVoicesClass(Resource):
-  @cache.cached(timeout=60)
+  #@cache.cached(timeout=60)
   def get(self):
     try:
       available_voices = voice.get_available_voices()

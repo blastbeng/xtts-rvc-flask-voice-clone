@@ -6,6 +6,7 @@ import shutil
 from pydub import AudioSegment
 from encodec.utils import convert_audio
 import numpy as np
+from silenceremove import process as remove_silence
 
 from IPython.display import Audio
 
@@ -18,8 +19,10 @@ from transformers import AutoProcessor, BarkModel
 import torchaudio
 import torch
 from io import BytesIO
-import scipy
 import psutil
+from scipy.io import wavfile
+import noisereduce as nr
+
 
 from os.path import join, dirname
 from dotenv import load_dotenv
@@ -37,7 +40,20 @@ def voice_clone(voice_name, audio_filepath, epochs=100, cleanup=False, from_scra
     if os.path.exists(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/"+voice_name):
       shutil.rmtree(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/"+voice_name)
 
-  os.chdir('./RVC')
+  if audio_filepath is not None:
+    rate, data = wavfile.read(audio_filepath)
+    reduced_noise = nr.reduce_noise(y=data, sr=rate)
+    wavfile.write(audio_filepath, rate, reduced_noise)
+    remove_silence(audio_filepath)
+
+  for dataset in os.listdir(os.path.dirname(os.path.abspath(__file__)) + "/datasets/"):
+    dataset_path = os.path.join(directory, dataset)
+    ds_rate, ds_data = wavfile.read(dataset_path)
+    reduced_noise = nr.reduce_noise(y=ds_data, sr=ds_rate)
+    wavfile.write(dataset_path, rate, reduced_noise)
+    remove_silence(dataset_path)
+
+  os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/")
   os.system(f"python oneclickprocess.py --name {voice_name} --mode train --epochs " + str(epochs))
   os.chdir('../')
 
@@ -48,8 +64,8 @@ def voice_clone(voice_name, audio_filepath, epochs=100, cleanup=False, from_scra
     if os.path.exists(os.path.dirname(os.path.abspath(__file__)) + "/datasets/"+voice_name):
       shutil.rmtree(os.path.dirname(os.path.abspath(__file__)) + "/datasets/"+voice_name)
 
-def talk(voice_name, text_prompt, barkvoice, text_temp, waveform_temp, job_id):
-  global preloaded
+def talk(voice_name, text_prompt, job_id, language):
+  global tts
   if not tts:
     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=True) 
 
@@ -59,13 +75,13 @@ def talk(voice_name, text_prompt, barkvoice, text_temp, waveform_temp, job_id):
   tts.tts_to_file(text=text_prompt,
     file_path=filepath,
     speaker_wav=os.path.dirname(os.path.abspath(__file__)) + "/voices/"+voice_name+".wav",
-    language="it")
+    language=language)
 
 
   
   if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/weights/"+voice_name+".pth"):
     #RVC Processing
-    os.chdir('./RVC')
+    os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/")
     os.system(f"python oneclickprocess.py --name {voice_name} --mode generate --epochs 0")
     os.chdir('../')
 

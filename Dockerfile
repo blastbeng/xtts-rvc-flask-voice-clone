@@ -32,7 +32,7 @@ WORKDIR $HOME
 RUN mkdir $HOME/.cache $HOME/.config && chmod -R 777 $HOME
 ENV PATH="$HOME/.local/bin:$PATH"
         
-WORKDIR $HOME/bark-flask-voice-clone
+WORKDIR $HOME/xtts-rvc-flask-voice-clone
 ENV PATH="/home/uwsgi/.local/bin:${PATH}"
 
 COPY requirements.txt .
@@ -41,31 +41,21 @@ RUN pip3 install -r requirements.txt
 
 USER root
 ENV HOME=/home/user
-RUN mkdir $HOME/bark-flask-voice-clone/bark
-ADD --chown=user:user bark/__init__.py $HOME/bark-flask-voice-clone/bark/__init__.py
-ADD --chown=user:user bark/api.py $HOME/bark-flask-voice-clone/bark/api.py
-ADD --chown=user:user bark/generation.py $HOME/bark-flask-voice-clone/bark/generation.py
-ADD --chown=user:user bark/model_fine.py $HOME/bark-flask-voice-clone/bark/model_fine.py
-ADD --chown=user:user bark/model.py $HOME/bark-flask-voice-clone/bark/model.py
-ADD --chown=user:user hubert $HOME/bark-flask-voice-clone/hubert
-ADD --chown=user:user RVC $HOME/bark-flask-voice-clone/RVC
-ADD --chown=user:user nuwave2 $HOME/bark-flask-voice-clone/nuwave2
-ADD --chown=user:user utils $HOME/bark-flask-voice-clone/utils
-ADD --chown=user:user config.py $HOME/bark-flask-voice-clone/config.py
-ADD --chown=user:user main.py $HOME/bark-flask-voice-clone/main.py
-ADD --chown=user:user voice.py $HOME/bark-flask-voice-clone/voice.py
-ADD --chown=user:user get_model.py $HOME/bark-flask-voice-clone/get_model.py
-ADD --chown=user:user init.py $HOME/bark-flask-voice-clone/init.py
-ADD --chown=user:user entrypoint.sh $HOME/bark-flask-voice-clone/entrypoint.sh
-ADD --chown=user:user uwsgi.ini $HOME/bark-flask-voice-clone/uwsgi.ini
-RUN mkdir -p $HOME/bark/assets/prompts/.cache/huggingface/download/
-RUN mkdir -p $HOME/bark-flask-voice-clone/bark/assets/prompts/.cache/huggingface/download/
-RUN chmod +x $HOME/bark-flask-voice-clone/entrypoint.sh
+ADD --chown=user:user hubert $HOME/xtts-rvc-flask-voice-clone/hubert
+ADD --chown=user:user RVC $HOME/xtts-rvc-flask-voice-clone/RVC
+ADD --chown=user:user nuwave2 $HOME/xtts-rvc-flask-voice-clone/nuwave2
+ADD --chown=user:user utils $HOME/xtts-rvc-flask-voice-clone/utils
+ADD --chown=user:user config.py $HOME/xtts-rvc-flask-voice-clone/config.py
+ADD --chown=user:user main.py $HOME/xtts-rvc-flask-voice-clone/main.py
+ADD --chown=user:user voice.py $HOME/xtts-rvc-flask-voice-clone/voice.py
+ADD --chown=user:user get_model.py $HOME/xtts-rvc-flask-voice-clone/get_model.py
+ADD --chown=user:user init.py $HOME/xtts-rvc-flask-voice-clone/init.py
+ADD --chown=user:user entrypoint.sh $HOME/xtts-rvc-flask-voice-clone/entrypoint.sh
+ADD --chown=user:user uwsgi.ini $HOME/xtts-rvc-flask-voice-clone/uwsgi.ini
+RUN chmod +x $HOME/xtts-rvc-flask-voice-clone/entrypoint.sh
 
-RUN chown -R user:user $HOME/bark-flask-voice-clone
-RUN chown -R user:user $HOME/bark
-RUN chmod 777 -R $HOME/bark-flask-voice-clone
-RUN chmod 777 -R $HOME/bark
+RUN chown -R user:user $HOME/xtts-rvc-flask-voice-clone
+RUN chmod 777 -R $HOME/xtts-rvc-flask-voice-clone
 
 
 USER user

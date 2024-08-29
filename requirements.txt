@@ -1,8 +1,12 @@
 python-dotenv==1.0.0
 TTS==0.22.0
 Flask-Caching==2.3.0
+uWSGI==2.0.21
 Flask-Limiter==3.3.0
+uwsgi-tools==1.1.1
 Flask~=2.1.2
+flask-restx==0.5.1
+redis==4.3.4
 Jinja2>=3.1.2
 Markdown
 Pillow>=9.1.1
@@ -76,3 +80,6 @@ ffmpeg
 prefetch_generator
 omegaconf==2.0.6
 pytorch_lightning==1.2.10
+noisereduce==3.0.2
+webrtcvad==2.0.10
+wave

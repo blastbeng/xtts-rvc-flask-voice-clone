@@ -1247,7 +1247,7 @@ if mode == "train":
     gpus16 = gpus
     gpu_info9 = gpu_info
     f0method8 = "harvest"
-    save_epoch10 = 20 if (int(epochs) / 2) > 20 else int(int(epochs) / 2)
+    save_epoch10 = 100 if (int(epochs) / 2) > 100 else int(int(epochs) / 2)
     total_epoch11 = int(epochs)
     batch_size12 = default_batch_size
     if_save_latest13 = "是"

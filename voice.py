@@ -59,7 +59,7 @@ def voice_clone(voice_name, epochs=100, cleanup=False, from_scratch=False):
       reduced_noise = nr.reduce_noise(y=ds_data, sr=ds_rate, chunk_size=32, use_torch=True, n_std_thresh_stationary=1,stationary=True)
       wavfile.write(dataset_path, rate, reduced_noise)
     logging.info("Starting silence remover process")
-    remove_silence(dataset_path)
+    remove_silence(2, dataset_path)
 
   os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/")
   os.system(f"python oneclickprocess.py --name {voice_name} --mode train --epochs " + str(epochs))

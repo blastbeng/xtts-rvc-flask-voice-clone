@@ -6,15 +6,13 @@ import shutil
 from pydub import AudioSegment
 from encodec.utils import convert_audio
 import numpy as np
-from silenceremove import process as remove_silence
 
 from IPython.display import Audio
 
 
-from TTS.api import TTS 
+from TTS.api import TTS
 
-from transformers import AutoProcessor, BarkModel
-
+from silenceremove import process as remove_silence
 
 import torchaudio
 import torch
@@ -23,15 +21,22 @@ import psutil
 from scipy.io import wavfile
 import noisereduce as nr
 
+import logging
 
 from os.path import join, dirname
 from dotenv import load_dotenv
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
+
+logging.basicConfig(
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        level=int(os.environ.get("LOG_LEVEL")),
+        datefmt='%Y-%m-%d %H:%M:%S')
+
 tts = False
 
-def voice_clone(voice_name, audio_filepath, epochs=100, cleanup=False, from_scratch=False):
+def voice_clone(voice_name, epochs=100, cleanup=False, from_scratch=False):
 
   if from_scratch:
     if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/weights/"+voice_name+".pth"):
@@ -40,17 +45,20 @@ def voice_clone(voice_name, audio_filepath, epochs=100, cleanup=False, from_scra
     if os.path.exists(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/"+voice_name):
       shutil.rmtree(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/"+voice_name)
 
-  if audio_filepath is not None:
-    rate, data = wavfile.read(audio_filepath)
-    reduced_noise = nr.reduce_noise(y=data, sr=rate)
-    wavfile.write(audio_filepath, rate, reduced_noise)
-    remove_silence(audio_filepath)
-
-  for dataset in os.listdir(os.path.dirname(os.path.abspath(__file__)) + "/datasets/"):
-    dataset_path = os.path.join(directory, dataset)
+  for dataset in os.listdir(os.path.dirname(os.path.abspath(__file__)) + "/datasets/"+voice_name):
+    dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)) + "/datasets/"+voice_name, dataset)
     ds_rate, ds_data = wavfile.read(dataset_path)
-    reduced_noise = nr.reduce_noise(y=ds_data, sr=ds_rate)
-    wavfile.write(dataset_path, rate, reduced_noise)
+    logging.info("Starting noise reduction process")
+    if len(ds_data > 1):
+      ds_data1 = ds_data[:,0]
+      ds_data2 = ds_data[0:,1]
+      reduced_noise1 = nr.reduce_noise(y=ds_data1, sr=ds_rate, chunk_size=32, use_torch=True, stationary=True)
+      reduced_noise2 = nr.reduce_noise(y=ds_data2, sr=ds_rate, chunk_size=32, use_torch=True, stationary=True)
+      reduced_noise = np.stack((reduced_noise1, reduced_noise2), axis=1)
+    else:
+      reduced_noise = nr.reduce_noise(y=ds_data, sr=ds_rate, chunk_size=32, use_torch=True, n_std_thresh_stationary=1,stationary=True)
+      wavfile.write(dataset_path, rate, reduced_noise)
+    logging.info("Starting silence remover process")
     remove_silence(dataset_path)
 
   os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/")
@@ -67,14 +75,19 @@ def voice_clone(voice_name, audio_filepath, epochs=100, cleanup=False, from_scra
 def talk(voice_name, text_prompt, job_id, language):
   global tts
   if not tts:
-    tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=True) 
+    tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=True)
 
+
+  random_speaker_wav = random.choice(os.listdir(os.path.dirname(os.path.abspath(__file__)) + "/datasets/"+voice_name))
+  speaker_wav = os.environ.get("TMP_DIR") + "/" + voice_name + "_speaker.wav"
+
+  shutil.copy(random_speaker_wav, speaker_wav)
 
   filepath = os.environ.get("TMP_DIR") + "/" + voice_name + ".wav"
 
   tts.tts_to_file(text=text_prompt,
     file_path=filepath,
-    speaker_wav=os.path.dirname(os.path.abspath(__file__)) + "/voices/"+voice_name+".wav",
+    speaker_wav=speaker_wav,
     language=language)
 
 
@@ -93,8 +106,8 @@ def talk(voice_name, text_prompt, job_id, language):
 
   shutil.move(filepath, final_path)
   
-  #if os.path.exists(filepath):
-  #  os.remove(filepath)
+  if os.path.exists(speaker_wav):
+    os.remove(speaker_wav)
 
 def request_audio(path):
 
@@ -109,5 +122,7 @@ def get_available_voices():
   foundvoices = {}
   for name in os.listdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/weights/"):
     if name != ".gitignore":
-      foundvoices[name.split(".")[0]] = name.split(".")[0]
+      voice_name = name.split(".")[0]
+      if os.path.isdir(os.path.dirname(os.path.abspath(__file__)) + "/datasets/"+voice_name):
+        foundvoices[voice_name] = voice_name
   return foundvoices

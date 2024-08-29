@@ -79,12 +79,12 @@ def get_response_json(data, status):
 
 nsvoice = api.namespace('voice', 'Voice APIs')
 
-@nsvoice.route('/clone/')
-@nsvoice.route('/clone/<int:epochs>/')
-@nsvoice.route('/clone/<int:epochs>/<int:cleanup>/')
-@nsvoice.route('/clone/<int:epochs>/<int:cleanup>/<int:from_scratch>/')
+@nsvoice.route('/clone/<string:voice_name>/')
+@nsvoice.route('/clone/<string:voice_name>/<int:epochs>/')
+@nsvoice.route('/clone/<string:voice_name>/<int:epochs>/<int:cleanup>/')
+@nsvoice.route('/clone/<string:voice_name>/<int:epochs>/<int:cleanup>/<int:from_scratch>/')
 class CloneClass(Resource):
-  def post (self, epochs = 100, cleanup = 0, from_scratch = 0):
+  def post (self, voice_name: str, epochs = 100, cleanup = 0, from_scratch = 0):
     try:      
       found = False
       for thread in threading.enumerate(): 
@@ -96,25 +96,14 @@ class CloneClass(Resource):
         } 
         return get_response_json(json.dumps(data), 206)
       else:
-        voice_name = request.form.get("voice")
-        audio = request.files.get('audio', None)
         i = 1
         datasets = []
         while request.files.get('dataset_' + str(i), None) is not None:
           datasets.append(request.files.get('dataset_'+ str(i), None))
           i = i + 1
-        if not voice_name:
-          return make_response('"voice" param is required!', 400)
-        elif audio is not None and not audio.filename.endswith(".wav"):
-          return make_response('"audio" param extension must be .wav!', 400)
-        else:
-          for dataset in datasets:
-            if not dataset.filename.endswith(".mp3") and not dataset.filename.endswith(".wav"):
-              return make_response('Every "dataset_x" param extension must be .wav or .mp3!', 400)
-        audio_filepath = None
-        if audio is not None:
-          audio_filepath = os.path.dirname(os.path.abspath(__file__)) + "/voices/"+voice_name+".wav"
-          audio.save(audio_filepath)
+        for dataset in datasets:
+          if not dataset.filename.endswith(".wav"):
+            return make_response('Every "dataset_x" param extension must be .wav or .mp3!', 400)
 
         traindir_path =  os.path.dirname(os.path.abspath(__file__)) + "/datasets/" + voice_name
         if cleanup == 1 and os.path.exists(traindir_path): 
@@ -128,10 +117,9 @@ class CloneClass(Resource):
           dataset.save(dataset_path)
 
         voice_clone_thread = "voice_clone_" + voice_name
-        threading.Thread(target=lambda: voice.voice_clone(voice_name, audio_filepath, epochs, cleanup==1, from_scratch==1), name=voice_clone_thread).start()
+        threading.Thread(target=lambda: voice.voice_clone(voice_name, epochs, cleanup==1, from_scratch==1), name=voice_clone_thread).start()
         data = {
           "message": "Starting voice cloning process",
-          "audio_filepath": "" if audio_filepath is None else audio_filepath,
           "dataset_path": "" if dataset_path is None else dataset_path,
           "epochs": str(epochs),
           "cleanup": str(cleanup==1),
@@ -199,12 +187,12 @@ class TalkClass(Resource):
         } 
         return get_response_json(json.dumps(data), 206)
       else:
-        if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/voices/"+voice_name+".wav"):
+        if os.path.isdir(os.path.dirname(os.path.abspath(__file__)) + "/datasets/"+voice_name) and os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/weights/"+voice_name+".pth"):
           job_id = voice_name + "_" + uuid.uuid4().hex
           voice_talk_thread = "voice_talk_" + job_id
           threading.Thread(target=lambda: voice.talk(voice_name, text, job_id), name=voice_talk_thread).start()
           data = {
-            "message": "Starting audio generation process. " + ("Weight file found, using RVC." if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/weights/"+voice_name+".pth") else "Weight file not found, not using RVC."),
+            "message": "Starting audio generation process.",
             "voice_name": voice_name,
             "text": text,
             "job_id": job_id,

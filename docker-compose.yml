@@ -34,7 +34,6 @@ services:
     volumes:
       - ".env:/home/user/xtts-rvc-flask-voice-clone/.env"
       - "cache:/home/user/.local/share/tts_cache"
-      - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/voices:/home/user/xtts-rvc-flask-voice-clone/voices"
       - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/data:/home/user/xtts-rvc-flask-voice-clone/data"
       - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/data/tts:/home/user/.local/share/tts"
       #- "/tmp/xtts-rvc-flask-voice-clone:/tmp/xtts-rvc-flask-voice-clone"

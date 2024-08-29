@@ -165,7 +165,6 @@ cython_debug/
 data
 output
 out
-voices
 nuwave2/nuwave2.ckpt
 RVC/oneclickprocess.pyi
 RVC/logs/*

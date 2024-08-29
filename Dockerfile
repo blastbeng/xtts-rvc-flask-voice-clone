@@ -48,6 +48,7 @@ ADD --chown=user:user utils $HOME/xtts-rvc-flask-voice-clone/utils
 ADD --chown=user:user config.py $HOME/xtts-rvc-flask-voice-clone/config.py
 ADD --chown=user:user main.py $HOME/xtts-rvc-flask-voice-clone/main.py
 ADD --chown=user:user voice.py $HOME/xtts-rvc-flask-voice-clone/voice.py
+ADD --chown=user:user silenceremove.py $HOME/xtts-rvc-flask-voice-clone/silenceremove.py
 ADD --chown=user:user get_model.py $HOME/xtts-rvc-flask-voice-clone/get_model.py
 ADD --chown=user:user init.py $HOME/xtts-rvc-flask-voice-clone/init.py
 ADD --chown=user:user entrypoint.sh $HOME/xtts-rvc-flask-voice-clone/entrypoint.sh

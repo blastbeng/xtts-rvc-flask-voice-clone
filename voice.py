@@ -52,10 +52,10 @@ def voice_clone(voice_name, epochs=100, dataset_paths=[], from_scratch=False):
       reduced_noise1 = nr.reduce_noise(y=ds_data1, sr=ds_rate, chunk_size=32, use_torch=True, use_tqdm=True)
       reduced_noise2 = nr.reduce_noise(y=ds_data2, sr=ds_rate, chunk_size=32, use_torch=True, use_tqdm=True)
       reduced_noise = np.stack((reduced_noise1, reduced_noise2), axis=1)
-      wavfile.write(dataset_path, rate, reduced_noise)
+      wavfile.write(dataset_path, ds_rate, reduced_noise)
     else:
       reduced_noise = nr.reduce_noise(y=ds_data, sr=ds_rate, chunk_size=32, use_torch=True, use_tqdm=True)
-      wavfile.write(dataset_path, rate, reduced_noise)
+      wavfile.write(dataset_path, ds_rate, reduced_noise)
 
   os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/")
   os.system(f"python oneclickprocess.py --name {voice_name} --mode train --epochs " + str(epochs))

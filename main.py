@@ -81,9 +81,8 @@ nsvoice = api.namespace('voice', 'Voice APIs')
 
 @nsvoice.route('/clone/<string:voice_name>/')
 @nsvoice.route('/clone/<string:voice_name>/<int:epochs>/')
-@nsvoice.route('/clone/<string:voice_name>/<int:epochs>/<int:from_scratch>/')
 class CloneClass(Resource):
-  def post (self, voice_name: str, epochs = 100, from_scratch = 0):
+  def post (self, voice_name: str, epochs = 100):
     try:      
       found = False
       for thread in threading.enumerate(): 
@@ -103,32 +102,29 @@ class CloneClass(Resource):
           i = i + 1
         if len(datasets) == 0 and (not os.path.isdir(traindir_path) or (os.path.isdir(traindir_path) and len(os.listdir(traindir_path)) == 0)):
               return make_response('Dataset folder is empty and no dataset provided! You need to provide at least one dataset_x in wav format, starting from 1 (es. dataset_1, dataset_2, etc...)', 400)
-        elif len(datasets) == 0 and from_scratch == 1:
-              return make_response('You asked to start from scratch but no dataset were provided! You need to provide at least one dataset_x in wav format, starting from 1 (es. dataset_1, dataset_2, etc...)', 400)
         else:
           for dataset in datasets:
             if not dataset.filename.endswith(".wav"):
               return make_response('Every "dataset_x" param extension must be .wav or .mp3!', 400)
 
-          if from_scratch == 1 and os.path.exists(traindir_path): 
+          if len(datasets) > 0 and os.path.exists(traindir_path): 
             shutil.rmtree(traindir_path)
           if not os.path.exists(traindir_path): 
             os.makedirs(traindir_path)
 
           dataset_path = None
           dataset_paths = []
+          i = 0
           for dataset in datasets:
-            dataset_path = traindir_path + "/" + dataset.filename
+            dataset_path = traindir_path + "/dataset_" + str(i) + ".wav"
             dataset.save(dataset_path)
             dataset_paths.append(dataset_path)
 
           voice_clone_thread = "voice_clone_" + voice_name
-          threading.Thread(target=lambda: voice.voice_clone(voice_name, epochs, dataset_paths, from_scratch==1), name=voice_clone_thread).start()
+          threading.Thread(target=lambda: voice.voice_clone(voice_name, epochs, dataset_paths), name=voice_clone_thread).start()
           data = {
             "message": "Starting voice cloning process",
-            "dataset_path": "" if dataset_path is None else dataset_path,
             "epochs": str(epochs),
-            "from_scratch": str(from_scratch==1),
             "voice_name": voice_name,
             "status_url": request.root_url + "voice/clone_status/" + voice_name
           }
@@ -195,7 +191,7 @@ class TalkClass(Resource):
         if os.path.isdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/"+voice_name) and os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/weights/"+voice_name+".pth"):
           job_id = voice_name + "_" + uuid.uuid4().hex
           voice_talk_thread = "voice_talk_" + job_id
-          threading.Thread(target=lambda: voice.talk(voice_name, text, job_id), name=voice_talk_thread).start()
+          threading.Thread(target=lambda: voice.talk(voice_name, text, job_id, language), name=voice_talk_thread).start()
           data = {
             "message": "Starting audio generation process.",
             "voice_name": voice_name,

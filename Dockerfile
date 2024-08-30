@@ -38,6 +38,7 @@ ENV PATH="/home/uwsgi/.local/bin:${PATH}"
 COPY requirements.txt .
 
 RUN pip3 install -r requirements.txt
+RUN pip3 install --no-deps unsilence==1.0.9
 
 USER root
 ENV HOME=/home/user

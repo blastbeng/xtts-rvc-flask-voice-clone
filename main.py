@@ -119,11 +119,12 @@ class CloneClass(Resource):
 
           dataset_path = None
           dataset_paths = []
-          i = 0
+          i = 1
           for dataset in datasets:
             dataset_path = traindir_path + "/dataset_" + str(i) + ".wav"
             dataset.save(dataset_path)
             dataset_paths.append(dataset_path)
+            i = i + 1
           job_id = uuid.uuid4().hex
           voice_clone_thread = "voice_clone_" + voice_name + "_" + job_id
           threading.Thread(target=lambda: voice.voice_clone(voice_name, job_id, epochs, dataset_paths), name=voice_clone_thread).start()

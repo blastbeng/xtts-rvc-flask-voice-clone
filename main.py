@@ -171,7 +171,7 @@ class CloneStatusClass(Resource):
           count = count + 1
       if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/logs/uwsgi.log"):
         for line in reversed(list(open(os.path.dirname(os.path.abspath(__file__)) + "/logs/uwsgi.log"))):
-          if job_id in line and "/voice_clone/status" not in line:
+          if job_id in line and "GET" not in line and "POST" not in line:
             log[str(count)] = line.replace("\n","").replace("\t",":").replace("["+job_id+"]","").strip()
             count = count + 1
 

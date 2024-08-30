@@ -30,19 +30,19 @@ load_dotenv(dotenv_path)
 
 tts = None
 
-def remove_silence(path, voice_name):
+def remove_silence(path, voice_name, job_id):
   nosilence_path = os.path.dirname(os.path.abspath(__file__)) + "/datasets/"+voice_name+"/sr_" + os.path.basename(path)
-  logging.info("[%s] Detecting silence on: %s", job_id, ath)
+  logging.info("[%s] Detecting silence on: %s", job_id, path)
   u = Unsilence(path)
   u.detect_silence()
   logging.info("[%s] Removing silence on: %s", job_id, path)
   u.render_media(nosilence_path, audio_only=True)
-  logging.info("[%s] Silenced removed saving, to file: %s", job_id, nosilence_path)
+  logging.info("[%s] Silenced removed, saving to file: %s", job_id, nosilence_path)
   if os.path.isfile(path):
     os.remove(path)
   return nosilence_path
 
-def remove_noise(path, voice_name):
+def remove_noise(path, voice_name, job_id):
   ds_rate, ds_data = wavfile.read(path)
   logging.info("[%s] Starting noise reduction process on: %s", job_id, path)
   noise_reduced_path = os.path.dirname(os.path.abspath(__file__)) + "/datasets/"+voice_name+"/nr_" + os.path.basename(path)
@@ -66,7 +66,7 @@ def remove_noise(path, voice_name):
 
   reduced_noise = nr.reduce_noise(y=ds_data, sr=ds_rate, chunk_size=32, use_torch=True, use_tqdm=True)
   wavfile.write(noise_reduced_path, ds_rate, reduced_noise)
-  logging.info("[%s] Noise reduction successfull, saving to file: %s", job_id, noise_reduced_path)
+  logging.info("[%s] Noise reduction successful, saving to file: %s", job_id, noise_reduced_path)
   if os.path.isfile(path):
     os.remove(path)
 
@@ -99,7 +99,7 @@ def voice_clone(voice_name, job_id, epochs=100, dataset_paths=[]):
       logging.info("[%s] Mono file saved to: %s", job_id, one_channel_path)
       if os.path.isfile(path):
         os.remove(path)
-      remove_noise(remove_silence(one_channel_path, voice_name), voice_name)
+      remove_noise(remove_silence(one_channel_path, voice_name, job_id), voice_name, job_id)
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/")
     os.system(f"python oneclickprocess.py --name {voice_name} --mode train --epochs " + str(epochs))
@@ -114,7 +114,8 @@ def voice_clone(voice_name, job_id, epochs=100, dataset_paths=[]):
     #      checkpoints.append(ck_path)
     #      logging.info("Found checkpoint: %s", ck_path)
   except Exception as e:
-    logging.error("[%s] voice_clone for %s failed.", job_id, voice_name)
+    logging.error("[%s] FAIL!! voice_clone for %s failed.", job_id, voice_name)
+    logging.error("[%s] Please check the server logs for further informations.", job_id, voice_name)
     raise e
 
 def talk(voice_name, text_prompt, job_id, language):

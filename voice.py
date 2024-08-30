@@ -99,7 +99,7 @@ def voice_clone(voice_name, job_id, epochs=100, dataset_paths=[]):
       logging.info("[%s] Mono file saved to: %s", job_id, one_channel_path)
       if os.path.isfile(path):
         os.remove(path)
-      remove_noise(remove_silence(one_channel_path, voice_name, job_id), voice_name, job_id)
+      remove_silence(one_channel_path, voice_name, job_id)
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/")
     os.system(f"python oneclickprocess.py --name {voice_name} --mode train --epochs " + str(epochs))

@@ -26,9 +26,14 @@ dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 logging.basicConfig(
+        handlers=[
+            logging.FileHandler(os.path.dirname(os.path.abspath(__file__)) + "/logs/uwsgi.log", mode="w"),
+            logging.StreamHandler()
+        ],
         format='%(asctime)s %(levelname)-8s %(message)s',
         level=int(os.environ.get("LOG_LEVEL")),
         datefmt='%Y-%m-%d %H:%M:%S')
+
 log = logging.getLogger('werkzeug')
 log.setLevel(int(os.environ.get("LOG_LEVEL")))
 
@@ -119,14 +124,15 @@ class CloneClass(Resource):
             dataset_path = traindir_path + "/dataset_" + str(i) + ".wav"
             dataset.save(dataset_path)
             dataset_paths.append(dataset_path)
-
-          voice_clone_thread = "voice_clone_" + voice_name
-          threading.Thread(target=lambda: voice.voice_clone(voice_name, epochs, dataset_paths), name=voice_clone_thread).start()
+          job_id = uuid.uuid4().hex
+          voice_clone_thread = "voice_clone_" + voice_name + "_" + job_id
+          threading.Thread(target=lambda: voice.voice_clone(voice_name, job_id, epochs, dataset_paths), name=voice_clone_thread).start()
           data = {
             "message": "Starting voice cloning process",
             "epochs": str(epochs),
             "voice_name": voice_name,
-            "status_url": request.root_url + "voice/clone_status/" + voice_name
+            "job_id": job_id,
+            "status_url": request.root_url + "voice/clone_status/" + voice_name + "/" + job_id
           }
           return get_response_json(json.dumps(data), 200)  
     except Exception as e:
@@ -135,36 +141,40 @@ class CloneClass(Resource):
       logging.error("%s %s %s", exc_type, fname, exc_tb.tb_lineno, exc_info=1)
       g.request_error = str(e)
 
-@nsvoice.route('/clone_status/<string:voice_name>')
+@nsvoice.route('/clone_status/<string:voice_name>/<string:job_id>')
 class CloneStatusClass(Resource):
-  def get (self, voice_name: str):
+  def get (self, voice_name: str, job_id: str):
     try:
-      voice_clone_thread = "voice_clone_" + voice_name
+      voice_clone_thread = "voice_clone_" + voice_name + "_" + job_id
       found = False
       for thread in threading.enumerate(): 
         if thread.name == voice_clone_thread and thread.is_alive():
           found = True
       data = {
         "status": "Running" if found else "Inactive",
-        "voice_name": voice_name
+        "voice_name": voice_name,
+        "job_id": job_id,
       }
       log = {}
       count = 0
-      if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/" + voice_name + "/preprocess.log"):
-        with open(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/" + voice_name + "/preprocess.log") as file:
-          for line in file:
-            log[str(count)] = line.replace("\n","")
-            count = count + 1
-      if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/" + voice_name + "/extract_f0_feature.log"):
-        with open(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/" + voice_name + "/extract_f0_feature.log") as file:
-          for line in file:
-            log[str(count)] = line.replace("\n","")
-            count = count + 1
       if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/" + voice_name + "/train.log"):
-        with open(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/" + voice_name + "/train.log") as file:
-          for line in file:
-            log[str(count)] = line.replace("\n","")
+        for line in reversed(list(open(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/" + voice_name + "/train.log"))):
+          log[str(count)] = line.replace("\n","").replace("\t",":")
+          count = count + 1
+      if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/" + voice_name + "/extract_f0_feature.log"):
+        for line in reversed(list(open(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/" + voice_name + "/extract_f0_feature.log"))):
+          log[str(count)] = line.replace("\n","").replace("\t",":")
+          count = count + 1
+      if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/" + voice_name + "/preprocess.log"):
+        for line in reversed(list(open(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/" + voice_name + "/preprocess.log"))):
+          log[str(count)] = line.replace("\n","").replace("\t",":")
+          count = count + 1
+      if os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/logs/uwsgi.log"):
+        for line in reversed(list(open(os.path.dirname(os.path.abspath(__file__)) + "/logs/uwsgi.log"))):
+          if job_id in line and "/voice_clone/status" not in line:
+            log[str(count)] = line.replace("\n","").replace("\t",":").replace("["+job_id+"]","").strip()
             count = count + 1
+
       data["log"] = log
       return get_response_json(json.dumps(data), 200)   
     except Exception as e:

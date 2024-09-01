@@ -80,6 +80,6 @@ ffmpeg
 prefetch_generator
 omegaconf==2.0.6
 pytorch_lightning==1.2.10
-noisereduce==3.0.2
 webrtcvad==2.0.10
 wave
+audiolm_pytorch

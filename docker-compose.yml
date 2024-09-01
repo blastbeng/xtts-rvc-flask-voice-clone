@@ -35,10 +35,12 @@ services:
     shm_size: "16gb"
     volumes:
       - ".env:/home/user/xtts-rvc-flask-voice-clone/.env"
-      - "cache:/home/user/.local/share/tts_cache"
+      - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/cache:/home/user/.cache"
+      - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/tts_cache:/home/user/.local/share/tts_cache"
       - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/logs:/home/user/xtts-rvc-flask-voice-clone/logs"
       - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/data:/home/user/xtts-rvc-flask-voice-clone/data"
       - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/data/tts:/home/user/.local/share/tts"
+      - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/bark_assets_prompts:/home/user/xtts-rvc-flask-voice-clone/bark/assets/prompts"
       #- "/tmp/xtts-rvc-flask-voice-clone:/tmp/xtts-rvc-flask-voice-clone"
       - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/tmp:/tmp/xtts-rvc-flask-voice-clone"
       - "/mnt/t/docker/configs/xtts-rvc-flask-voice-clone/RVC_weights:/home/user/xtts-rvc-flask-voice-clone/RVC/weights"
@@ -53,9 +55,6 @@ services:
       interval: 15s
       timeout: 5s
       retries: 12
-volumes:
-  cache:
-  logs:
 networks:
   xtts-rvc-flask-voice-clone-network:
     driver: bridge

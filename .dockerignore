@@ -5,3 +5,17 @@
 **/RVC/__pycache__
 **/RVC/oneclickprocess.pyi
 **/nuwave2/__pycache__
+.vscode/**/*
+.vscode
+data/**/*
+data
+bark/assets/prompts/**/*
+bark/assets/prompts
+RVC/weights/**/*
+RVC/weights
+RVC/logs/**/*
+RVC/logs
+datasets/**/*
+datasets
+.venv/**/*
+.venv

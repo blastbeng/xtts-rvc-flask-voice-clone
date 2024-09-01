@@ -43,6 +43,7 @@ RUN pip3 install --no-deps unsilence==1.0.9
 USER root
 ENV HOME=/home/user
 COPY hubert hubert
+COPY bark bark
 COPY RVC RVC
 COPY nuwave2 nuwave2
 COPY utils utils

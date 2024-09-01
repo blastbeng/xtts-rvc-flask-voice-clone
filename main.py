@@ -85,9 +85,10 @@ def get_response_json(data, status):
 nsvoice = api.namespace('voice', 'Voice APIs')
 
 @nsvoice.route('/clone/<string:voice_name>/')
-@nsvoice.route('/clone/<string:voice_name>/<int:epochs>/')
+@nsvoice.route('/clone/<string:voice_name>/<int:restart>/')
+@nsvoice.route('/clone/<string:voice_name>/<int:restart>/<int:epochs>/')
 class CloneClass(Resource):
-  def post (self, voice_name: str, epochs = 100):
+  def post (self, voice_name: str, restart = 0, epochs = 100):
     try:      
       found = False
       for thread in threading.enumerate(): 
@@ -127,7 +128,7 @@ class CloneClass(Resource):
             i = i + 1
           job_id = uuid.uuid4().hex
           voice_clone_thread = "voice_clone_" + voice_name + "_" + job_id
-          threading.Thread(target=lambda: voice.voice_clone(voice_name, job_id, epochs, dataset_paths), name=voice_clone_thread).start()
+          threading.Thread(target=lambda: voice.voice_clone(voice_name, job_id, epochs, dataset_paths, restart==1), name=voice_clone_thread).start()
           data = {
             "message": "Starting voice cloning process",
             "epochs": str(epochs),
@@ -185,9 +186,10 @@ class CloneStatusClass(Resource):
       g.request_error = str(e)
 
 @nsvoice.route('/talk/<string:voice_name>/<string:text>/')
-@nsvoice.route('/talk/<string:voice_name>/<string:text>/<string:language>/')
+@nsvoice.route('/talk/<string:voice_name>/<string:text>/<int:use_bark>/')
+@nsvoice.route('/talk/<string:voice_name>/<string:text>/<int:use_bark>/<string:language>/')
 class TalkClass(Resource):
-  def get (self, voice_name: str, text: str, language = "it"):
+  def get (self, voice_name: str, text: str, use_bark = 0, language = "it"):
     try:
       found = False
       for thread in threading.enumerate(): 
@@ -199,10 +201,10 @@ class TalkClass(Resource):
         } 
         return get_response_json(json.dumps(data), 206)
       else:
-        if os.path.isdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/"+voice_name) and os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/weights/"+voice_name+".pth"):
+        if os.path.isdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/logs/"+voice_name) and os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/RVC/weights/"+voice_name+".pth") and os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/bark/assets/prompts/"+voice_name+".npz"): 
           job_id = voice_name + "_" + uuid.uuid4().hex
           voice_talk_thread = "voice_talk_" + job_id
-          threading.Thread(target=lambda: voice.talk(voice_name, text, job_id, language), name=voice_talk_thread).start()
+          threading.Thread(target=lambda: voice.talk(voice_name, text, job_id, language, use_bark==1), name=voice_talk_thread).start()
           data = {
             "message": "Starting audio generation process.",
             "voice_name": voice_name,

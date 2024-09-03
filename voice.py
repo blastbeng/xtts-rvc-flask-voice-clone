@@ -139,7 +139,7 @@ def voice_clone(voice_name, job_id, epochs=100, dataset_paths=[], restart=False)
     logging.error("[%s] Please check the server logs for further informations.", job_id, voice_name)
     raise e
 
-def talk(voice_name, text_prompt, job_id, language, use_bark=False):
+def talk(voice_name, text_prompt, job_id, language, use_bark=False, use_rvc=True):
 
   filepath = os.environ.get("TMP_DIR") + "/" + voice_name + ".wav"
 
@@ -169,15 +169,15 @@ def talk(voice_name, text_prompt, job_id, language, use_bark=False):
       speaker_wav=random_speaker_wav,
       language=language)
 
-  
-  #RVC Processing
-  os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/")
-  os.system(f"python oneclickprocess.py --name {voice_name} --mode generate --epochs 0")
-  os.chdir('../')
+  if use_rvc:
+    #RVC Processing
+    os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/RVC/")
+    os.system(f"python oneclickprocess.py --name {voice_name} --mode generate --epochs 0")
+    os.chdir('../')
 
-  os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/nuwave2')
-  os.system(f"python inference.py -c ../data/nuwave2.ckpt -i " + filepath + " --sr 24000")
-  os.chdir('../')
+  #os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/nuwave2')
+  #os.system(f"python inference.py -c ../data/nuwave2.ckpt -i " + filepath + " --sr 24000")
+  #os.chdir('../')
 
   final_path = os.environ.get("TMP_DIR") + "/" + job_id + ".wav"
 
